@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Jordan Expenses</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- jsPDF CDN for PDF export -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --back: #f3f6fd;
+      --glass: rgba(255, 255, 255, .35);
+      --blur: 14px;
+      --border: rgba(255,255,255,0.63);
+      --primary: #4a90e2;
+      --neumorph-shadow: 6px 6px 16px #e3e7ee, -6px -6px 16px #ffffff;
+    }
+    body {
+      background: var(--back);
+      font-family: 'Segoe UI', Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      background: var(--glass);
+      box-shadow: var(--neumorph-shadow);
+      border-radius: 25px;
+      margin: 2rem 0 2rem 0;
+      padding: 2rem 1rem 1.5rem 1rem;
+      max-width: 500px;
+      width: 95vw;
+      backdrop-filter: blur(var(--blur));
+      border: 1.2px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      margin-top: 0;
+      margin-bottom: 1.6rem;
+      letter-spacing: 1px;
+      font-size: 2rem;
+      color: var(--primary);
+      font-weight: 700;
+      filter: drop-shadow(2px 2px 10px #b3c4db6e);
+      user-select: none;
+    }
+    form {
+      width: 100%;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .form-group {
+      flex: 1;
+      min-width: 90px;
+      display: flex;
+      flex-direction: column;
+    }
+    label {
+      font-size: 0.98rem;
+      margin-left: 2px;
+      color: #3d4e68c8;
+      margin-bottom: 2px;
+    }
+    input[type="date"], 
+    input[type="text"], 
+    input[type="number"] {
+      border: none;
+      border-radius: 12px;
+      padding: 8px;
+      margin-bottom: 0.5rem;
+      box-shadow: 2px 2px 8px #f3f5f8, -2px -2px 8px #ffffffc4;
+      background: rgba(250,250,255,0.57);
+      font-size: 1rem;
+      outline: none;
+      transition: box-shadow 0.16s;
+    }
+    input[type="text"]:focus, input[type="number"]:focus, input[type="date"]:focus {
+      box-shadow: 0 0 0 2px var(--primary);
+    }
+    button, .pdf-btn {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 18px;
+      box-shadow: var(--neumorph-shadow);
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 0.3rem;
+      transition: background 0.14s, color 0.16s;
+      font-weight: bold;
+      letter-spacing: 0.4px;
+      outline: none;
+    }
+    button:active, .pdf-btn:active {
+      background: #256bb1;
+    }
+    .pdf-btn {
+      width: 100%;
+      margin-top: 1.1rem;
+      letter-spacing: 1.1px;
+      font-size: 1.02rem;
+      padding: 12px 0;
+    }
+    table {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 0.3rem;
+      backdrop-filter: blur(var(--blur));
+      background: rgba(255,255,255,0.52);
+      box-shadow: 2px 2px 14px #e5eaf1c2;
+      overflow: hidden;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px;
+      font-size: 0.99rem;
+    }
+    th {
+      color: var(--primary);
+      background: rgba(230,242,255,0.44);
+      font-weight: 700;
+    }
+    td {
+      color: #23425aee;
+      background: rgba(250,250,255,0.4);
+      font-weight: 400;
+    }
+    tr:not(:last-child) td {
+      border-bottom: 0.8px solid #e3e9f44b;
+    }
+    .delete-btn {
+      background: transparent;
+      color: #e84e49;
+      border: none;
+      padding: 0;
+      margin: 0 0.3em;
+      font-size: 1.35em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: color 0.18s;
+    }
+    .delete-btn:hover {
+      color: #c6120c;
+    }
+    .total-row td {
+      font-weight: 600;
+      background: rgba(74, 144, 226, 0.12);
+      font-size: 1.05rem;
+      color: #2c4b70;
+    }
+    @media (max-width: 600px) {
+      .container {
+        padding: 1.1rem 2vw 1.2rem 2vw;
+      }
+      th, td {
+        padding: 8px 4px;
+        font-size: 0.97rem;
+      }
+      h1 {
+        font-size: 1.35rem;
+      }
+      .pdf-btn {
+        padding: 11px 0;
+        font-size: 0.95rem;
+      }
+      button {
+        padding: 8px 0.8em;
+        font-size: 0.98rem;
+      }
+    }
+    /* glass highlight transition effect: */
+    @media (hover: hover) and (pointer: fine) {
+      button:hover, .pdf-btn:hover {
+        background: #357acb;
+        color: #f5fcff;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Jordan Expenses</h1>
+    <form id="expense-form" autocomplete="off">
+      <div class="form-group">
+        <label for="date">Date</label>
+        <input type="date" id="date" required>
+      </div>
+      <div class="form-group">
+        <label for="desc">Description</label>
+        <input type="text" id="desc" placeholder="E.g. Lunch, Taxi" required maxlength="60">
+      </div>
+      <div class="form-group">
+        <label for="amount">Amount</label>
+        <input type="number" id="amount" min="0" step="0.01" placeholder="0.00" required>
+      </div>
+      <button type="submit" id="add-btn" style="align-self:flex-end; min-width:60px;">Add</button>
+    </form>
+
+    <div style="width: 100%; overflow-x:auto; border-radius: 10px;">
+      <table id="expense-table">
+        <thead>
+          <tr>
+            <th style="min-width:100px;">Date</th>
+            <th>Description</th>
+            <th style="min-width:80px;">Amount</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="expenses-body">
+          <!-- Entries here -->
+        </tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td colspan="2">Total</td>
+            <td id="total-cell">0.00</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <button class="pdf-btn" id="pdf-btn">Convert to PDF</button>
+  </div>
+  <script>
+  // Helper functions
+  function formatDate(isoDate) {
+      if (!isoDate) return '';
+      const d = new Date(isoDate);
+      return d.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+  function formatAmount(val) {
+      return Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // Storage/key
+  const LS_KEY = 'jordan_expenses';
+
+  function loadExpenses() {
+      let data = [];
+      try {
+          data = JSON.parse(localStorage.getItem(LS_KEY)) || [];
+      } catch (e) {}
+      return Array.isArray(data) ? data : [];
+  }
+  function saveExpenses(list) {
+      localStorage.setItem(LS_KEY, JSON.stringify(list));
+  }
+
+  // App State
+  let expenses = loadExpenses();
+
+  // Render logic
+  function renderExpenses() {
+      const tbody = document.getElementById('expenses-body');
+      tbody.innerHTML = '';
+      let total = 0;
+      if(expenses.length===0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;opacity:0.55;">No expenses yet.</td></tr>';
+      } else {
+        expenses.forEach((e, idx) => {
+          // safer escaping (could use DOM APIs or sanitize, demo only)
+          let desc = e.desc.replace(/[<>]/g, '');
+          tbody.innerHTML += `
+            <tr>
+              <td>${formatDate(e.date)}</td>
+              <td>${desc}</td>
+              <td>${formatAmount(e.amount)}</td>
+              <td><button class="delete-btn" title="Delete" onclick="deleteExpense(${idx})">&times;</button></td>
+            </tr>`;
+          total += parseFloat(e.amount);
+        });
+      }
+      document.getElementById('total-cell').textContent = formatAmount(total);
+  }
+
+  // Add/delete logic
+  document.getElementById('expense-form').onsubmit = function(event) {
+      event.preventDefault();
+      const date = document.getElementById('date').value;
+      const desc = document.getElementById('desc').value.trim();
+      const amount = parseFloat(document.getElementById('amount').value);
+      if (!date || !desc || isNaN(amount)) {
+          alert('Please fill out all fields.');
+          return;
+      }
+      expenses.push({date, desc, amount});
+      saveExpenses(expenses);
+      this.reset();
+      renderExpenses();
+  }
+
+  window.deleteExpense = function(idx) {
+      if (window.confirm("Delete this expense?")) {
+        expenses.splice(idx,1);
+        saveExpenses(expenses);
+        renderExpenses();
+      }
+  };
+
+  // PDF Export
+  document.getElementById('pdf-btn').onclick = function() {
+    // Build up PDF content
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 40;
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(20);
+    doc.text("Jordan Expenses", pageWidth/2, y, {align: "center"});
+    y += 30;
+
+    doc.setDrawColor(120); // subtle table border
+
+    doc.setFontSize(12);
+    let tableY = y+10;
+    let colX = [40, 140, pageWidth-90, pageWidth-40]; // date, desc, amount, X
+
+    // Header
+    doc.setFillColor(230, 242, 255);
+    doc.setTextColor(74, 144, 226);
+    doc.rect(colX[0], tableY, colX[2]-colX[0], 24, "F");
+    doc.text("Date", colX[0]+2, tableY+17);
+    doc.text("Description", colX[1], tableY+17);
+    doc.text("Amount", colX[2], tableY+17, {align:"right"});
+
+    doc.setFont("helvetica","normal");
+    doc.setTextColor(25, 42, 61);
+    tableY += 27;
+    let total = 0;
+    if (expenses.length === 0) {
+        doc.text("No expenses.", colX[0]+4, tableY+16);
+        tableY += 24;
+    } else {
+      expenses.forEach(e => {
+        doc.text(formatDate(e.date), colX[0]+2, tableY+16);
+        // split description if too long
+        let descLines = doc.splitTextToSize(e.desc, colX[2]-colX[1]-10);
+        doc.text(descLines, colX[1], tableY+16);
+        doc.text(formatAmount(e.amount), colX[2], tableY+16, {align:"right"});
+        let rowH = 20 + 13*(descLines.length-1);
+        tableY += rowH;
+        total += parseFloat(e.amount);
+      });
+    }
+    // Total row
+    doc.setFont("helvetica","bold");
+    doc.setTextColor(44,75,112);
+    tableY += 5;
+    doc.setFillColor(220,234,255, 0.2 * 255);
+    doc.rect(colX[0], tableY, colX[2]-colX[0], 23, "F");
+    doc.text("Total", colX[0]+2, tableY+16);
+    doc.text(formatAmount(total), colX[2], tableY+16, {align:"right"});
+    // Save PDF
+    let now = new Date(), dateStr = now.toISOString().slice(0,10);
+    doc.save(`Jordan_Expenses_${dateStr}.pdf`);
+  };
+
+  // Restore and render
+  renderExpenses();
+
+  // keyboard 'Enter' should not submit on delete btn
+  document.getElementById("expenses-body").addEventListener("keydown", e=>{
+    if(e.key==="Enter") e.preventDefault();
+  });
+  </script>
+</body>
+</html>
