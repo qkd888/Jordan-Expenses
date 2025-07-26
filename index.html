@@ -264,54 +264,119 @@
         renderExpenses();
       }
     };
+
+    function addTableHeader(doc, colX, yPos) {
+      // Draw header text
+      doc.setFont("helvetica","normal");
+      doc.setTextColor(74, 144, 226);
+      doc.text("Date", colX[0], yPos + 12);
+      doc.text("Description", colX[1], yPos + 12);
+      doc.text("Amount", colX[2], yPos + 12, {align: "right"});
+      // Draw line under header
+      doc.setDrawColor(150);
+      doc.line(colX[0], yPos + 14, colX[2] + 70, yPos + 14);
+    }
+
     document.getElementById('pdf-btn').onclick = function() {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
       const pageWidth = doc.internal.pageSize.getWidth();
-      let y = 40;
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      const marginLeft = 40;
+      const marginRight = 40;
+      const marginTop = 40;
+      const marginBottom = 40;
+
+      let y = marginTop;
+      const lineHeight = 16; // Base line height for single line text
+
       doc.setFont("helvetica","bold");
       doc.setFontSize(20);
       doc.text("Jordan's Expenses", pageWidth/2, y, {align: "center"});
       y += 30;
-      doc.setFontSize(12);
-      let tableY = y+10;
-      let colX = [40, 140, pageWidth-90, pageWidth-40];
-      // Table Header
+
+      // Table starting y position
+      let tableY = y + 10;
+
+      const colX = [marginLeft, 140, pageWidth - marginRight - 50];
+
+      addTableHeader(doc, colX, tableY);
+      y = tableY + 20;
+
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(74, 144, 226);
-      doc.text("Date", colX[0], tableY+12);
-      doc.text("Description", colX[1], tableY+12);
-      doc.text("Amount", colX[2], tableY+12, {align: "right"});
-      let lineY = tableY + 14;
-      doc.setDrawColor(150);
-      doc.line(colX[0], lineY, colX[2]+70, lineY);
-      let total = 0;
-      tableY = lineY + 4;
+      doc.setFontSize(12);
       doc.setTextColor(25, 42, 61);
+
+      let total = 0;
+
       if (expenses.length === 0) {
-        doc.text("No expenses.", colX[0], tableY+12);
-        tableY += 24;
+        doc.text("No expenses.", colX[0], y);
+        y += lineHeight * 2;
       } else {
-        expenses.forEach(e => {
-          let descLines = doc.splitTextToSize(e.desc, colX[2]-colX[1]-10);
-          doc.text(formatDate(e.date), colX[0], tableY+13);
-          doc.text(descLines, colX[1], tableY+13);
-          doc.text(formatAmount(e.amount), colX[2], tableY+13, {align:"right"});
-          let rowH = 20 + 13*(descLines.length-1);
-          tableY += rowH;
+        for(let i=0; i < expenses.length; i++) {
+          const e = expenses[i];
+          const descLines = doc.splitTextToSize(e.desc, colX[2] - colX[1]);
+          const rowHeight = descLines.length * lineHeight + 8; // add some padding
+
+          // Check if adding this row will exceed the page height
+          if (y + rowHeight + marginBottom > pageHeight) {
+            doc.addPage();
+            y = marginTop;
+            // Redraw header on new page
+            doc.setFontSize(20);
+            doc.setFont("helvetica","bold");
+            doc.setTextColor(74, 144, 226);
+            doc.text("Jordan's Expenses (cont.)", pageWidth / 2, y, {align: "center"});
+            y += 30;
+            addTableHeader(doc, colX, y);
+            y += 20;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(12);
+            doc.setTextColor(25, 42, 61);
+          }
+
+          // Draw data cells
+          doc.text(formatDate(e.date), colX[0], y + 13);
+          doc.text(descLines, colX[1], y + 13);
+          doc.text(formatAmount(e.amount), colX[2], y + 13, {align: "right"});
+
+          y += rowHeight;
           total += parseFloat(e.amount);
-        });
+        }
       }
-      // Total row (NO special highlighting)
-      doc.setFont("helvetica","bold");
-      doc.setTextColor(44,75,112);
-      tableY += 2;
-      doc.text("Total", colX[0], tableY+13);
-      doc.text(formatAmount(total), colX[2], tableY+13, {align:"right"});
-      // Save PDF
-      let now = new Date(), dateStr = now.toISOString().slice(0,10);
+
+      // Draw total row
+      // Check page space before rendering total
+      const totalRowHeight = lineHeight + 8;
+      if (y + totalRowHeight + marginBottom > pageHeight) {
+        doc.addPage();
+        y = marginTop;
+        doc.setFontSize(20);
+        doc.setFont("helvetica","bold");
+        doc.setTextColor(74, 144, 226);
+        doc.text("Jordan's Expenses (cont.)", pageWidth / 2, y, {align: "center"});
+        y += 30;
+        addTableHeader(doc, colX, y);
+        y += 20;
+        doc.setFont("helvetica","bold");
+        doc.setFontSize(12);
+        doc.setTextColor(44, 75, 112);
+      } else {
+        doc.setFont("helvetica","bold");
+        doc.setFontSize(12);
+        doc.setTextColor(44, 75, 112);
+      }
+
+      y += 4;
+      doc.text("Total", colX[0], y + 13);
+      doc.text(formatAmount(total), colX[2], y + 13, {align: "right"});
+
+      // Save PDF with date in filename
+      const now = new Date(), dateStr = now.toISOString().slice(0,10);
       doc.save(`Jordan_Expenses_${dateStr}.pdf`);
     };
+
     renderExpenses();
     // Prevent Enter deletion
     document.getElementById("expenses-body").addEventListener("keydown", e=>{
